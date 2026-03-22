@@ -7,14 +7,14 @@ import { getDatabase } from "firebase/database";
 import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCgHmJ5KSqoKpYzW1Rp7z0EysIe4o-Dmso",
-    authDomain: "health-analyze-669c7.firebaseapp.com",
-    projectId: "health-analyze-669c7",
-    storageBucket: "health-analyze-669c7.firebasestorage.app",
-    messagingSenderId: "625899943816",
-    appId: "1:625899943816:web:40512e169ff86258ebec3d",
-    measurementId: "G-PXTP2E9MZ5",
-    databaseURL: "https://health-analyze-669c7-default-rtdb.firebaseio.com/"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+    databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL
 };
 
 // Initialize Firebase
