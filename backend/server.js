@@ -25,7 +25,7 @@ const server = http.createServer(app);
 // Socket.IO ni sozlash va serverga ulash
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173", // Frontend manzili
+    origin: "*", // Barcha manzillardan ulanishga ruxsat (CORS xatosi bo'lmasligi uchun)
     methods: ["GET", "POST"]
   }
 });
