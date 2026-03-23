@@ -24,6 +24,7 @@ export const useVideoCall = () => {
     const userVideo = useRef<HTMLVideoElement>(null);
     const connectionRef = useRef<RTCPeerConnection | null>(null);
     const pendingCandidates = useRef<RTCIceCandidateInit[]>([]);
+    const remoteUserId = useRef<string | null>(null);
 
     useEffect(() => {
         if (!user) return;
@@ -35,6 +36,7 @@ export const useVideoCall = () => {
         socket.on('call_user', (data: CallData) => {
             setRecevingCall(true);
             setCallData(data);
+            remoteUserId.current = data.from;
         });
 
         // Listen for when the recipient answers
@@ -98,6 +100,7 @@ export const useVideoCall = () => {
         if (!user) return;
         setOutgoingCall(true);
         setPeerStatus('calling');
+        remoteUserId.current = idToCall;
 
         const currentStream = stream || await setupStream();
         if (!currentStream) return;
@@ -227,8 +230,16 @@ export const useVideoCall = () => {
             setStream(null);
         }
 
-        if (callData && callAccepted) {
-            socket.emit('end_call', { to: callData.from });
+        if (myVideo.current) {
+            myVideo.current.srcObject = null;
+        }
+        if (userVideo.current) {
+            userVideo.current.srcObject = null;
+        }
+
+        if (remoteUserId.current) {
+            socket.emit('end_call', { to: remoteUserId.current });
+            remoteUserId.current = null;
         }
 
         pendingCandidates.current = [];
