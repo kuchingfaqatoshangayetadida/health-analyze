@@ -23,6 +23,7 @@ export const useVideoCall = () => {
     const myVideo = useRef<HTMLVideoElement>(null);
     const userVideo = useRef<HTMLVideoElement>(null);
     const connectionRef = useRef<RTCPeerConnection | null>(null);
+    const pendingCandidates = useRef<RTCIceCandidateInit[]>([]);
 
     useEffect(() => {
         if (!user) return;
@@ -37,22 +38,30 @@ export const useVideoCall = () => {
         });
 
         // Listen for when the recipient answers
-        socket.on('call_accepted', (signal) => {
+        socket.on('call_accepted', async (signal) => {
             setCallAccepted(true);
             setOutgoingCall(false);
             setPeerStatus('connected');
             if (connectionRef.current) {
-                connectionRef.current.setRemoteDescription(new RTCSessionDescription(signal));
+                try {
+                    await connectionRef.current.setRemoteDescription(new RTCSessionDescription(signal));
+                    pendingCandidates.current.forEach(candidate => {
+                        connectionRef.current?.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
+                    });
+                    pendingCandidates.current = [];
+                } catch (e) {
+                    console.error("Error setting remote description from call_accepted", e);
+                }
             }
         });
 
         // Listen for new ICE candidates
         socket.on('ice_candidate', (candidate) => {
             if (connectionRef.current) {
-                try {
-                    connectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-                } catch (e) {
-                    console.error('Error adding received ice candidate', e);
+                if (connectionRef.current.remoteDescription && connectionRef.current.remoteDescription.type) {
+                    connectionRef.current.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => console.error('Error adding received ice candidate', e));
+                } else {
+                    pendingCandidates.current.push(candidate);
                 }
             }
         });
@@ -95,7 +104,8 @@ export const useVideoCall = () => {
 
         const peer = new RTCPeerConnection({
             iceServers: [
-                { urls: "stun:stun.l.google.com:19302" }
+                { urls: "stun:stun.l.google.com:19302" },
+                { urls: "stun:global.stun.twilio.com:3478" }
             ]
         });
         connectionRef.current = peer;
@@ -145,7 +155,8 @@ export const useVideoCall = () => {
 
         const peer = new RTCPeerConnection({
             iceServers: [
-                { urls: "stun:stun.l.google.com:19302" }
+                { urls: "stun:stun.l.google.com:19302" },
+                { urls: "stun:global.stun.twilio.com:3478" }
             ]
         });
         connectionRef.current = peer;
@@ -173,7 +184,15 @@ export const useVideoCall = () => {
         };
 
         // Receive the caller's offer
-        await peer.setRemoteDescription(new RTCSessionDescription(callData.signal));
+        try {
+            await peer.setRemoteDescription(new RTCSessionDescription(callData.signal));
+            pendingCandidates.current.forEach(candidate => {
+                peer.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
+            });
+            pendingCandidates.current = [];
+        } catch (e) {
+            console.error("Error setting remote description from offer", e);
+        }
 
         // Create an answer and send it back
         const answer = await peer.createAnswer();
@@ -212,6 +231,7 @@ export const useVideoCall = () => {
             socket.emit('end_call', { to: callData.from });
         }
 
+        pendingCandidates.current = [];
         setCallData(null);
     };
 
