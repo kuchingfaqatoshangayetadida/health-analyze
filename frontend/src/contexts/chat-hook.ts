@@ -30,8 +30,10 @@ export interface Doctor {
   history: string;
 }
 
-// Socket ulanishini faqat bir marta yaratamiz va eksport qilamiz
-export const socket = io("http://localhost:5000");
+// Socket ulanishini avtomatik aniqlaydigan qilib tuzamiz. 
+// Render kabi joylarda VITE_API_URL orqali beramiz, lokalda esa localhost
+const SERVER_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+export const socket = io(SERVER_URL);
 
 // 1. Shifokorlar ro'yxatini boshqarish uchun hook
 export const useDoctors = () => {
