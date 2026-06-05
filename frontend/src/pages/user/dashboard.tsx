@@ -226,12 +226,19 @@ const UserDashboard: React.FC = () => {
       const data = await response.json();
       let botText = data.response?.text || data.text || "Kechirasiz, tizimda xatolik yuz berdi.";
 
+           // Backenddan kelgan tavsiyani olamiz (agar tag topilmasa yordam beradi)
+      let specialty = data.response?.recommendedSpecialty || null;
+
       // Parse referral: [yo'nalish: Kardiolog]
-      let specialty = null;
-      const match = botText.match(/\[yo'nalish:\s*(.*?)\]/);
+      const match = botText.match(/\[yo'nalish:\s*(.*?)\]/i);
       if (match) {
         specialty = match[1].trim();
-        botText = botText.replace(/\[yo'nalish:.*?\]/, "").trim();
+        botText = botText.replace(/\[yo'nalish:.*?\]/i, "").trim();
+      }
+      
+      // Agar AI shifokorni aniqlay olmasa, standart Terapevtga yo'naltiramiz
+      if (!specialty) {
+        specialty = 'Terapevt';
       }
 
       const botMessage: BotChatMessage = {
