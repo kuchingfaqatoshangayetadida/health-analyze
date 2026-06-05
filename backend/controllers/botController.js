@@ -44,7 +44,7 @@ export const askBot = async (req, res) => {
       ],
       model: 'llama-3.1-8b-instant',
       temperature: 0.7,
-      max_tokens: 500,
+      max_tokens: 3000,
     });
 
     const botText = chatCompletion.choices[0]?.message?.content || "Kechirasiz, hozirda javob bera olmayman.";
