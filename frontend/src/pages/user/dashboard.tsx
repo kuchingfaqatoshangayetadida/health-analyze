@@ -212,7 +212,10 @@ const UserDashboard: React.FC = () => {
     setIsBotTyping(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/bot/ask", {
+      // VITE_API_URL orqali Render manzilini olamiz, lokalda esa localhost ishlaydi
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      
+      const response = await fetch(`${API_URL}/api/bot/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: userText }),
