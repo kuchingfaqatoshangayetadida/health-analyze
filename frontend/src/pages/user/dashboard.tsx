@@ -82,7 +82,7 @@ const UserDashboard: React.FC = () => {
   useEffect(() => {
     if (connectModalOpen) {
       const interval = setInterval(() => {
-        setCurrentImageIndex((prev) => (prev + 1) % smartwatchImages.length);
+        setCurrentImageIndex((prev: number) => (prev + 1) % smartwatchImages.length);
       }, 3000);
       return () => clearInterval(interval);
     }
@@ -207,14 +207,12 @@ const UserDashboard: React.FC = () => {
 
     const userText = botNewMessage.trim();
     const userMessage: BotChatMessage = { sender: 'user', text: userText };
-    setBotChatMessages(prev => [...prev, userMessage]);
+    setBotChatMessages((prev: BotChatMessage[]) => [...prev, userMessage]);
     setBotNewMessage('');
     setIsBotTyping(true);
 
     try {
-      // VITE_API_URL orqali Render manzilini olamiz, lokalda esa localhost ishlaydi
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-      
       const response = await fetch(`${API_URL}/api/bot/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -226,34 +224,24 @@ const UserDashboard: React.FC = () => {
       const data = await response.json();
       let botText = data.response?.text || data.text || "Kechirasiz, tizimda xatolik yuz berdi.";
 
-           // Backenddan kelgan tavsiyani olamiz (agar tag topilmasa yordam beradi)
-      let specialty = data.response?.recommendedSpecialty || null;
-
       // Parse referral: [yo'nalish: Kardiolog]
+      let specialty = "Shifokor";
       const match = botText.match(/\[yo'nalish:\s*(.*?)\]/i);
       if (match) {
         specialty = match[1].trim();
-        botText = botText.replace(/\[yo'nalish:.*?\]/i, "").trim();
-      }
-      
-      // Agar AI shifokorni aniqlay olmasa, standart Terapevtga yo'naltiramiz
-      if (!specialty) {
-        specialty = 'Terapevt';
+        botText = botText.replace(/\[yo'nalish:.*?\]/gi, "").trim();
       }
 
       const botMessage: BotChatMessage = {
         sender: 'bot',
         text: botText,
+        suggestion: { doctorSpecialty: specialty }
       };
 
-      if (specialty) {
-        botMessage.suggestion = { doctorSpecialty: specialty };
-      }
-
-      setBotChatMessages(prev => [...prev, botMessage]);
+      setBotChatMessages((prev: BotChatMessage[]) => [...prev, botMessage]);
     } catch (error) {
       console.error("Bot chat error:", error);
-      setBotChatMessages(prev => [...prev, {
+      setBotChatMessages((prev: BotChatMessage[]) => [...prev, {
         sender: 'bot',
         text: "Texnik xatolik yuz berdi. Iltimos, Groq API kalitingizni tekshiring yoki keyinroq qayta urinib ko'ring."
       }]);
@@ -263,18 +251,21 @@ const UserDashboard: React.FC = () => {
   };
 
   const handleContactDoctorFromBot = (specialty: string) => {
-    const doctorToContact = allDoctors.find((doc: any) =>
-      doc.specialty.toLowerCase().includes(specialty.toLowerCase())
+    let doctorToContact = allDoctors.find((doc: any) =>
+      doc.specialty?.toLowerCase().includes(specialty.toLowerCase())
     );
+
+    if (!doctorToContact && allDoctors.length > 0) {
+      doctorToContact = allDoctors[0]; // Ixtiyoriy birinchi doktorni tanlash
+    }
 
     if (doctorToContact) {
       setIsBotChatOpen(false);
       handleStartChat(doctorToContact);
     } else {
-      // Show search UI or general message
-      setBotChatMessages(prev => [...prev, {
+      setBotChatMessages((prev: BotChatMessage[]) => [...prev, {
         sender: 'bot',
-        text: `Hozirda bizda bo'sh ${specialty} mutaxassisi yo'q, lekin men boshqa shifokorni tavsiya qilishim mumkin.`
+        text: `Kechirasiz, hozirda tizimda ro'yxatdan o'tgan shifokorlar yo'q.`
       }]);
     }
   };
@@ -626,16 +617,16 @@ const UserDashboard: React.FC = () => {
                       className={message.sender === 'user' ? 'bg-primary text-white' : 'bg-secondary text-white'}
                     />
                     <div className={`p-4 rounded-2xl shadow-sm ${message.sender === 'user' ? 'bg-primary text-white rounded-tr-none' : 'bg-white dark:bg-gray-800 border border-divider/50 rounded-tl-none'}`}>
-                      <p className="text-sm leading-relaxed" style={{ whiteSpace: 'pre-wrap' }}>{message.text}</p>
+                      <p className="text-sm leading-relaxed break-words" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{message.text}</p>
 
-                      {message.suggestion && (
-                        <div className="mt-4 p-3 bg-primary/5 dark:bg-primary/20 rounded-xl border border-primary/10">
+                      {message.suggestion && message.sender === 'bot' && (
+                        <div className="mt-4 p-3 bg-primary/5 dark:bg-primary/20 rounded-xl border border-primary/10 w-full">
                           <p className="text-xs font-bold text-primary flex items-center gap-2 mb-2">
                             <Icon icon="lucide:stethoscope" /> TAVSIYA ETILGAN MUTAXASSIS:
                           </p>
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-sm font-semibold text-foreground-700">{message.suggestion.doctorSpecialty}</span>
-                            <Button size="sm" color="primary" variant="shadow" className="h-8 rounded-lg text-xs" startContent={<Icon icon="lucide:calendar" />} onPress={() => { setIsBotChatOpen(false); handleContactDoctorFromBot(message.suggestion!.doctorSpecialty); }}>Vaqt belgilash</Button>
+                          <div className="flex items-center justify-between gap-3 flex-wrap">
+                            <span className="text-sm font-semibold text-foreground-700 break-words">{message.suggestion.doctorSpecialty}</span>
+                            <Button size="sm" color="primary" variant="shadow" className="h-8 rounded-lg text-xs" startContent={<Icon icon="lucide:message-circle" />} onPress={() => { setIsBotChatOpen(false); handleContactDoctorFromBot(message.suggestion!.doctorSpecialty); }}>Shifokor bilan chat</Button>
                           </div>
                         </div>
                       )}
